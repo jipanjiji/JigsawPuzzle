@@ -11,29 +11,10 @@
            <div class="flex items-center gap-1"><kbd class="bg-white/10 px-2 py-0.5 rounded">Right Click</kbd> Pan Board</div>
        </div>
 
-       <div class="flex gap-8 items-center w-1/3">
-           <!-- Player 1 Progress -->
-           <div class="flex-1 flex flex-col gap-2">
-               <div class="flex justify-between text-sm mb-1">
-                   <span class="text-primary font-medium">{{ myName }} ( You )</span>
-                   <span class="font-mono text-green-400 font-bold">{{ Math.round(myProgress) }}%</span>
-               </div>
-               <div class="h-2 w-full bg-surface rounded-full overflow-hidden border border-white/5">
-                   <div class="h-full bg-green-500 rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(34,197,94,0.5)]" :style="`width: ${Math.round(myProgress)}%`"></div>
-               </div>
-           </div>
-           
-           <div class="text-2xl font-black text-slate-700 italic">VS</div>
-
-           <!-- Player 2 Progress -->
-           <div class="flex-1 flex flex-col gap-2">
-               <div class="flex justify-between text-sm mb-1">
-                   <span class="text-accent font-medium">{{ opponentName }} ( Opponent )</span>
-                   <span class="font-mono text-red-400 font-bold">{{ Math.round(opponentProgress) }}%</span>
-               </div>
-               <div class="h-2 w-full bg-surface rounded-full overflow-hidden border border-white/5">
-                   <div class="h-full bg-red-500 rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(239,68,68,0.5)]" :style="`width: ${Math.round(opponentProgress)}%`"></div>
-               </div>
+       <div class="hidden lg:flex items-center gap-6 bg-white/5 px-6 py-2.5 rounded-2xl border border-white/10 shadow-inner">
+           <div class="flex items-center gap-2 text-slate-400 font-medium">
+               <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+               {{ roomState?.players ? Object.keys(roomState.players).length : 0 }} Players Online
            </div>
        </div>
 
@@ -45,16 +26,69 @@
 
     <!-- Center Game Area -->
     <div @contextmenu.prevent class="flex-1 w-full bg-[#0a0f18] mt-20 relative overflow-hidden" id="game-area">
-       <!-- Konva uses this internal div, isolated from Vue reactivity DOM additions -->
-       <div id="konva-container" ref="containerRef" class="absolute inset-0"></div>
+        <!-- Sidebar Leaderboard -->
+        <div v-if="roomState" class="absolute top-8 right-8 w-64 flex flex-col gap-4 z-40 bg-background/40 backdrop-blur-xl p-5 rounded-[2rem] border border-white/10 shadow-2xl">
+            <div class="flex justify-between items-center px-1">
+                <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Rankings</h3>
+                <span class="text-[10px] font-bold text-primary px-2 py-0.5 rounded-full bg-primary/10">LIVE</span>
+            </div>
+            
+            <div class="flex flex-col gap-2.5">
+                <div v-for="(player, idx) in sortedLeaderboard" :key="player.id" 
+                     class="flex flex-col gap-1.5 p-3 rounded-2xl transition-all border"
+                     :class="player.id === currentPlayerId ? 'bg-primary/20 border-primary/30 shadow-lg shadow-primary/5 scale-[1.02]' : 'bg-white/5 border-white/5'">
+                    <div class="flex justify-between items-center px-0.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black w-4 text-slate-500">#{{ idx + 1 }}</span>
+                            <span class="text-xs font-bold truncate max-w-[100px]" :class="player.id === currentPlayerId ? 'text-primary' : 'text-slate-300'">
+                                {{ player.name }}
+                            </span>
+                        </div>
+                        <span class="font-mono text-[11px] font-black" :class="player.progress >= 100 ? 'text-green-400' : 'text-slate-400'">
+                            {{ Math.round(player.progress) }}%
+                        </span>
+                    </div>
+                    <div class="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                        <div class="h-full transition-all duration-700 ease-out" 
+                             :class="player.id === currentPlayerId ? 'bg-gradient-to-r from-primary to-accent' : 'bg-slate-600'"
+                             :style="`width: ${player.progress}%`"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Konva uses this internal div, isolated from Vue reactivity DOM additions -->
+        <div id="konva-container" ref="containerRef" class="absolute inset-0"></div>
 
        <!-- Game Over Overlay -->
        <div v-if="matchFinished" class="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-xl">
            <div class="glass p-12 rounded-3xl text-center max-w-md w-full border border-white/20 shadow-2xl">
-               <h2 class="animate-bounce text-5xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r" :class="isWinner ? 'from-green-400 to-emerald-600' : 'from-red-400 to-rose-600'">
-                   {{ isWinner ? 'YOU WIN!' : 'YOU LOSE!' }}
+               <h2 class="animate-bounce text-5xl font-black mb-1 text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
+                   GAME OVER
                </h2>
-               <p class="text-slate-300 mb-8">{{ isWinner ? 'Absolutely phenomenal speed!' : 'Better luck next time, your opponent was faster.' }}</p>
+               <div class="mb-8">
+                   <p class="text-slate-400 text-[10px] uppercase tracking-[0.4em] font-bold">Final Results</p>
+               </div>
+
+               <div class="space-y-3 mb-10 text-left">
+                   <div v-for="(player, idx) in sortedLeaderboard.slice(0, 3)" :key="player.id"
+                        class="flex items-center justify-between p-4 rounded-2xl border"
+                        :class="idx === 0 ? 'bg-yellow-400/10 border-yellow-400/20 ring-1 ring-yellow-400/20' : 'bg-white/5 border-white/5'">
+                       <div class="flex items-center gap-4">
+                           <div class="w-10 h-10 rounded-full flex items-center justify-center font-black text-xl" 
+                                :class="idx === 0 ? 'bg-yellow-400 text-black' : idx === 1 ? 'bg-slate-300 text-black' : 'bg-amber-600 text-white'">
+                               {{ idx + 1 }}
+                           </div>
+                           <div class="flex flex-col">
+                               <span class="font-black text-sm" :class="idx === 0 ? 'text-white' : 'text-slate-300'">{{ player.name }}</span>
+                               <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{{ idx === 0 ? 'Winner' : 'Runner Up' }}</span>
+                           </div>
+                       </div>
+                       <span class="font-mono font-black text-lg" :class="idx === 0 ? 'text-yellow-400' : 'text-slate-500'">{{ Math.round(player.progress) }}%</span>
+                   </div>
+               </div>
+
+               <p class="text-slate-400 text-xs mb-8 italic">Better luck next time, puzzles await!</p>
                <button @click="backToLobby" class="w-full bg-primary hover:bg-primaryHover text-white py-4 rounded-xl font-bold transition-all shadow-lg shadow-primary/30">
                    Back to Lobby
                </button>
@@ -87,30 +121,32 @@ const myProgress = computed(() => {
    return me ? me.progress : 0;
 });
 
-const opponentProgress = computed(() => {
-   if (!roomState.value || !currentPlayerId.value) return 0;
-   const opponents = Object.keys(roomState.value.players).filter(id => id !== currentPlayerId.value);
-   if (opponents.length === 0) return 0;
-   return roomState.value.players[opponents[0]].progress || 0;
-});
-
 const myName = computed(() => {
    if (!roomState.value || !currentPlayerId.value) return 'Player';
    return roomState.value.players[currentPlayerId.value]?.name || 'Player';
 });
 
-const opponentName = computed(() => {
-   if (!roomState.value || !currentPlayerId.value) return 'Waiting...';
-   const opponents = Object.keys(roomState.value.players).filter(id => id !== currentPlayerId.value);
-   if (opponents.length === 0) return 'Waiting...';
-   return roomState.value.players[opponents[0]]?.name || 'Waiting...';
+const opponentsData = computed(() => {
+   if (!roomState.value || !currentPlayerId.value) return [];
+   return Object.entries(roomState.value.players)
+     .filter(([id]) => id !== currentPlayerId.value)
+     .map(([id, p]) => ({ id, ...p }));
+});
+
+const sortedLeaderboard = computed(() => {
+   if (!roomState.value) return [];
+   return Object.entries(roomState.value.players)
+     .map(([id, p]) => ({ id, ...p }))
+     .sort((a, b) => b.progress - a.progress || a.name.localeCompare(b.name));
 });
 
 const matchFinished = computed(() => {
-   return myProgress.value >= 100 || opponentProgress.value >= 100;
+   if (!roomState.value) return false;
+   return Object.values(roomState.value.players).some((p) => p.progress >= 100);
 });
 
 const isWinner = computed(() => {
+   if (!roomState.value) return false;
    return myProgress.value >= 100;
 });
 

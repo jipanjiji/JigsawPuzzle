@@ -5,10 +5,10 @@ import { useAuth } from './useAuth';
 export const useGameRoom = () => {
   const { $db } = useNuxtApp();
   const { user } = useAuth();
-  
+
   const currentRoomId = ref<string | null>(null);
   const roomState = ref<any>(null);
-  
+
   // Use Firebase UID as the primary key for players
   const currentPlayerId = computed(() => user.value?.uid || null);
 
@@ -25,36 +25,36 @@ export const useGameRoom = () => {
   // Sync Room with current User UID Session
   watch(currentPlayerId, async (newId) => {
     if (newId) {
-       const roomId = await checkUserInRoom(newId);
-       if (roomId) {
-          currentRoomId.value = roomId;
-          listenToRoom(roomId);
-       }
+      const roomId = await checkUserInRoom(newId);
+      if (roomId) {
+        currentRoomId.value = roomId;
+        listenToRoom(roomId);
+      }
     } else {
-       currentRoomId.value = null;
-       roomState.value = null;
+      currentRoomId.value = null;
+      roomState.value = null;
     }
   }, { immediate: true });
 
   const createRoom = async (playerName: string) => {
     if (!currentPlayerId.value) throw new Error('Please login first');
-    
+
     // 1-Match Limit Check
     const activeRoom = await checkUserInRoom(currentPlayerId.value);
     if (activeRoom) {
-       const dbRoot = dbRef($db as any);
-       const roomSnapshot = await get(child(dbRoot, `rooms/${activeRoom}`));
-       if (roomSnapshot.exists()) {
-          throw new Error(`You are already in an active room: ${activeRoom}`);
-       } else {
-          // Clean up stale room ID
-          await update(dbRef($db as any), { [`users/${currentPlayerId.value}/currentRoomId`]: null });
-       }
+      const dbRoot = dbRef($db as any);
+      const roomSnapshot = await get(child(dbRoot, `rooms/${activeRoom}`));
+      if (roomSnapshot.exists()) {
+        throw new Error(`You are already in an active room: ${activeRoom}`);
+      } else {
+        // Clean up stale room ID
+        await update(dbRef($db as any), { [`users/${currentPlayerId.value}/currentRoomId`]: null });
+      }
     }
 
     const roomId = generateRoomCode();
     const dbRoot = dbRef($db as any);
-    
+
     const updates: any = {};
     updates[`rooms/${roomId}`] = {
       status: 'waiting',
@@ -82,37 +82,37 @@ export const useGameRoom = () => {
 
   const joinRoom = async (roomId: string, playerName: string) => {
     if (!currentPlayerId.value) throw new Error('Please login first');
-    
+
     // 1-Match Limit Check
     const activeRoom = await checkUserInRoom(currentPlayerId.value);
     roomId = roomId.toUpperCase();
-    
+
     if (activeRoom && activeRoom !== roomId) {
-       const dbRoot = dbRef($db as any);
-       const roomSnapshot = await get(child(dbRoot, `rooms/${activeRoom}`));
-       if (roomSnapshot.exists()) {
-          throw new Error(`You are already in another active room: ${activeRoom}`);
-       } else {
-          // Clean up stale room ID
-          await update(dbRef($db as any), { [`users/${currentPlayerId.value}/currentRoomId`]: null });
-       }
+      const dbRoot = dbRef($db as any);
+      const roomSnapshot = await get(child(dbRoot, `rooms/${activeRoom}`));
+      if (roomSnapshot.exists()) {
+        throw new Error(`You are already in another active room: ${activeRoom}`);
+      } else {
+        // Clean up stale room ID
+        await update(dbRef($db as any), { [`users/${currentPlayerId.value}/currentRoomId`]: null });
+      }
     }
 
     const dbRoot = dbRef($db as any);
     const roomSnapshot = await get(child(dbRoot, `rooms/${roomId}`));
-    
+
     if (!roomSnapshot.exists()) {
       throw new Error('Room not found');
     }
-    
+
     const data = roomSnapshot.val();
     if (data.status !== 'waiting' && !data.players?.[currentPlayerId.value]) {
       throw new Error('Game already started or finished');
     }
-    
+
     const playersCount = Object.keys(data.players || {}).length;
-    if (playersCount >= 2 && !data.players[currentPlayerId.value!]) {
-      throw new Error('Room is full');
+    if (playersCount >= 6 && !data.players[currentPlayerId.value!]) {
+      throw new Error('Room is full (Max 6 Players)');
     }
 
     const updates: any = {};
@@ -122,9 +122,9 @@ export const useGameRoom = () => {
       progress: 0
     };
     updates[`users/${currentPlayerId.value}/currentRoomId`] = roomId;
-    
+
     await update(dbRoot, updates);
-    
+
     currentRoomId.value = roomId;
     listenToRoom(roomId);
     return roomId;
@@ -139,7 +139,7 @@ export const useGameRoom = () => {
         roomState.value = null;
         currentRoomId.value = null;
         if (currentPlayerId.value) {
-           update(dbRef($db as any), { [`users/${currentPlayerId.value}/currentRoomId`]: null });
+          update(dbRef($db as any), { [`users/${currentPlayerId.value}/currentRoomId`]: null });
         }
       }
     });
@@ -153,7 +153,7 @@ export const useGameRoom = () => {
 
       const roomRef = dbRef($db as any, `rooms/${roomId}`);
       off(roomRef);
-      
+
       const updates: any = {};
       updates[`rooms/${roomId}/players/${uid}`] = null;
       updates[`users/${uid}/currentRoomId`] = null;
@@ -172,19 +172,19 @@ export const useGameRoom = () => {
     updates[`rooms/${roomId}/players/${currentPlayerId.value}/isReady`] = isReady;
     await update(dbRoot, updates);
   };
-  
+
   const setImageUrl = async (roomId: string, url: string) => {
-     const dbRoot = dbRef($db as any);
-     const updates: any = {};
-     updates[`rooms/${roomId}/settings/imageUrl`] = url;
-     await update(dbRoot, updates);
+    const dbRoot = dbRef($db as any);
+    const updates: any = {};
+    updates[`rooms/${roomId}/settings/imageUrl`] = url;
+    await update(dbRoot, updates);
   }
 
   const setGridSize = async (roomId: string, size: number) => {
-     const dbRoot = dbRef($db as any);
-     const updates: any = {};
-     updates[`rooms/${roomId}/settings/gridSize`] = size;
-     await update(dbRoot, updates);
+    const dbRoot = dbRef($db as any);
+    const updates: any = {};
+    updates[`rooms/${roomId}/settings/gridSize`] = size;
+    await update(dbRoot, updates);
   }
 
   const startGame = async (roomId: string) => {

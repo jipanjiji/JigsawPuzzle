@@ -170,31 +170,36 @@
                 </div>
 
                 <!-- Players List -->
-                <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                   <div v-for="(player, pId) in roomState.players" :key="pId" 
                        class="p-4 rounded-2xl bg-surface/40 border flex flex-col items-center gap-2 transition-all relative overflow-hidden"
                        :class="player.isReady ? 'border-green-500/50 bg-green-500/5 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'border-white/5'">
                     
-                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xl text-white">
-                      {{ (player.name || 'P').charAt(0).toUpperCase() }}
-                      <span v-if="roomState.host === pId" class="absolute top-2 right-2 text-yellow-400">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                      </span>
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-white/10 relative">
+                        <span class="text-lg font-black text-white/50">{{ player.name?.[0]?.toUpperCase() }}</span>
+                        <!-- Status Badge -->
+                        <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-background"
+                             :class="player.isReady ? 'bg-green-500' : 'bg-yellow-500'">
+                           <span class="text-[8px] font-black text-white">{{ player.isReady ? '✓' : '...' }}</span>
+                        </div>
                     </div>
+
                     <div class="text-center">
-                        <p class="font-bold text-white text-sm line-clamp-1">{{ player.name || 'Anonymous' }}</p>
-                        <p class="text-[10px] font-bold" :class="player.isReady ? 'text-green-400' : 'text-slate-500'">{{ player.isReady ? 'READY' : 'PREPARING' }}</p>
+                      <p class="text-xs font-bold text-white truncate max-w-[100px]">{{ player.name }}</p>
+                      <p class="text-[10px] font-medium" :class="player.isReady ? 'text-green-400' : 'text-slate-500'">
+                        {{ player.isReady ? 'READY' : 'WAITING' }}
+                      </p>
                     </div>
 
                     <div v-if="pId === user.uid" class="absolute bottom-0 inset-x-0 h-1 bg-primary"></div>
                   </div>
 
-                  <!-- Slot 2 Empty -->
-                  <div v-if="Object.keys(roomState.players).length < 2" class="p-4 rounded-2xl bg-surface/20 border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 opacity-50">
+                  <!-- Extra Slots (Up to 6) -->
+                  <div v-if="Object.keys(roomState.players).length < 6" class="p-4 rounded-2xl bg-surface/20 border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 opacity-50">
                       <div class="w-10 h-10 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center">
                           <span class="text-slate-600 animate-pulse">+</span>
                       </div>
-                      <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Inviting Opponent...</span>
+                      <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Inviting more...</span>
                   </div>
                 </div>
 
