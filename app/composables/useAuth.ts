@@ -144,9 +144,10 @@ export const useAuth = () => {
       const updates: any = {};
       updates[`users/${uid}/history/${historyId}`] = matchData;
 
-      // Increment public race count & add Cooldown Timestamp
+      // Mandatory for every match result (for rules validation)
       const currentRaceCount = user.value.raceCount || (user.value.history ? Object.keys(user.value.history).length : 0);
       updates[`leaderboards/${uid}/raceCount`] = currentRaceCount + 1;
+      updates[`leaderboards/${uid}/recentRoomId`] = roomId;
       updates[`leaderboards/${uid}/lastMatchAt`] = serverTimestamp();
 
       // If Rank 1, add trophy AND mark winner atomically
@@ -158,9 +159,8 @@ export const useAuth = () => {
         updates[`users/${uid}/trophies`] = newTrophies;
         updates[`users/${uid}/recentRoomId`] = roomId;
         
-        // PUBLIC LEADERBOARD (with Proof)
+        // PUBLIC LEADERBOARD (with Trophy)
         updates[`leaderboards/${uid}/trophies`] = newTrophies;
-        updates[`leaderboards/${uid}/recentRoomId`] = roomId;
         
         // ATOMIC WINNER RECORDING (Critical for Rules Validation)
         updates[`rooms/${roomId}/winner`] = uid;

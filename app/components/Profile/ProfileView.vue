@@ -51,9 +51,9 @@
       </div>
 
       <!-- Match History -->
-      <div class="lg:col-span-2 flex flex-col h-full min-h-[600px]">
-        <div class="glass p-10 rounded-[4rem] border border-white/10 flex-1 flex flex-col shadow-2xl">
-            <div class="flex justify-between items-center mb-12 px-4">
+      <div class="lg:col-span-2 flex flex-col h-full">
+        <div class="glass p-10 rounded-[4rem] border border-white/10 shadow-2xl h-[720px] flex flex-col">
+            <div class="flex justify-between items-center mb-12 px-4 shrink-0">
                 <div>
                     <h2 class="text-3xl font-black text-white uppercase tracking-tight">Match History</h2>
                     <p class="text-[9px] font-black text-slate-500 uppercase tracking-[0.3em] mt-1">Status: Online</p>
@@ -71,7 +71,7 @@
                 <p class="font-black tracking-[0.5em] text-[10px] uppercase">No games played yet</p>
             </div>
 
-            <div v-else class="space-y-4 overflow-y-auto pr-2 no-scrollbar">
+            <div v-else class="flex-1 overflow-y-auto pr-4 custom-scrollbar space-y-4">
                 <div v-for="h in sortedHistory" :key="h.timestamp" class="group bg-white/5 p-8 rounded-[3rem] border border-white/5 flex items-center justify-between hover:bg-white/10 hover:border-primary/30 transition-all hover:scale-[1.01] shadow-lg">
                     <div class="flex items-center gap-10">
                         <div class="w-16 h-16 rounded-[1.5rem] flex items-center justify-center font-black text-3xl shadow-2xl transition-all group-hover:scale-110 group-hover:rotate-6 ring-2 ring-white/5 shadow-inner" 
@@ -133,11 +133,17 @@ const handleUpdateName = async () => {
 </script>
 
 <style scoped>
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
 }
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 </style>
