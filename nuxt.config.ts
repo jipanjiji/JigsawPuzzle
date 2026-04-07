@@ -6,11 +6,11 @@ export default defineNuxtConfig({
   
   app: {
     head: {
-      title: 'Jigsaw Puzzle Speed Race - Multiplayer 🧩',
+      title: 'Jigsaw Rush - Multiplayer Puzzle Race 🧩',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Uji kecepatan kamu dalam menyusun puzzle jigsaw secara real-time melawan teman! Siapa yang tercepat?' },
+        { name: 'description', content: 'Uji kecepatan kamu dalam menyusun puzzle jigsaw secara real-time melawan teman di Jigsaw Rush! Siapa yang tercepat?' },
         { name: 'format-detection', content: 'telephone=no' },
         { name: 'theme-color', content: '#6366f1' }
       ],

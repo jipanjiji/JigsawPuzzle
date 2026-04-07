@@ -3,7 +3,7 @@
     
     <!-- Navbar / Stats -->
     <div class="absolute top-0 w-full h-20 glass flex items-center justify-between px-8 z-10 border-b border-white/5 shadow-xl">
-       <div class="font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Speed Race Arena</div>
+       <div class="font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent uppercase tracking-tighter">Jigsaw Rush Arena</div>
        
        <!-- Instructions (added for zoom/pan) -->
        <div class="hidden lg:flex items-center gap-4 text-xs text-white/50 bg-white/5 px-4 py-2 rounded-full">
@@ -40,8 +40,9 @@
                     <div class="flex justify-between items-center px-0.5">
                         <div class="flex items-center gap-2">
                             <span class="text-[10px] font-black w-4 text-slate-500">#{{ idx + 1 }}</span>
-                            <span class="text-xs font-bold truncate max-w-[100px]" :class="player.id === currentPlayerId ? 'text-primary' : 'text-slate-300'">
+                            <span class="text-xs font-bold truncate max-w-[100px] flex items-center gap-1.5" :class="player.id === currentPlayerId ? 'text-primary' : 'text-slate-300'">
                                 {{ player.name }}
+                                <span v-if="player.username?.toLowerCase() === 'alvin'" class="bg-gradient-to-r from-yellow-400 to-amber-600 text-black text-[6px] px-1 py-0.5 rounded-md font-black uppercase tracking-tighter shadow-sm shadow-yellow-400/20">Dev</span>
                             </span>
                         </div>
                         <span class="font-mono text-[11px] font-black" :class="player.progress >= 100 ? 'text-green-400' : 'text-slate-400'">
@@ -108,7 +109,7 @@ import { useAuth } from '~/composables/useAuth';
 const route = useRoute();
 const router = useRouter();
 const { user } = useAuth();
-const { roomState, currentPlayerId, listenToRoom, currentRoomId, updateProgress, setPiecesSetup, leaveRoom } = useGameRoom();
+const { roomState, currentPlayerId, listenToRoom, currentRoomId, updateProgress, setPiecesSetup, leaveRoom, completeMatch } = useGameRoom();
 
 const containerRef = ref(null);
 
@@ -148,6 +149,20 @@ const matchFinished = computed(() => {
 const isWinner = computed(() => {
    if (!roomState.value) return false;
    return myProgress.value >= 100;
+});
+
+const { recordMatchResult } = useAuth();
+const hasRecordedResult = ref(false);
+
+watch(matchFinished, async (isDone) => {
+    if (isDone && !hasRecordedResult.value && currentPlayerId.value) {
+        const myRank = sortedLeaderboard.value.findIndex(p => p.id === currentPlayerId.value) + 1;
+        if (myRank > 0) {
+            // ALL-IN-ONE RECORDING: Updates rank, history, trophies, winner, and status atomically
+            await recordMatchResult(myRank, route.params.id);
+            hasRecordedResult.value = true;
+        }
+    }
 });
 
 const backToLobby = async () => {

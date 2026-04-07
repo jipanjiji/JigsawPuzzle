@@ -1,14 +1,65 @@
 {
   "rules": {
-    ".read": "auth != null",
     "users": {
-        "$uid": {
-            ".write": "auth != null && auth.uid == $uid"
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['username', 'displayName'])",
+        "recentRoomId": { ".validate": "newData.isString()" },
+        "trophies": {
+          ".validate": "newData.isNumber() && ( (!data.exists() && newData.val() == 0) || newData.val() == data.val() || (newData.val() == data.val() + 1 && newData.parent().child('recentRoomId').isString() && newData.parent().child('recentRoomId').val() != data.parent().child('recentRoomId').val() && root.child('rooms/' + newData.parent().child('recentRoomId').val() + '/players/' + auth.uid + '/progress').val() >= 100 && root.child('rooms/' + newData.parent().child('recentRoomId').val() + '/settings/gridSize').val() >= 4) )"
         }
+      }
+    },
+    "leaderboards": {
+      ".read": "auth != null",
+      ".indexOn": ["trophies"],
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid",
+        "username": { ".validate": "newData.isString()" },
+        "displayName": { ".validate": "newData.isString()" },
+        "lastMatchAt": { ".validate": "newData.val() <= now" },
+        "recentRoomId": { ".validate": "newData.isString()" },
+        "trophies": { 
+          ".validate": "newData.isNumber() && ( (!data.exists() && newData.val() == 0) || newData.val() == data.val() || (newData.val() == data.val() + 1 && newData.parent().child('recentRoomId').isString() && newData.parent().child('recentRoomId').val() != data.parent().child('recentRoomId').val() && root.child('rooms/' + newData.parent().child('recentRoomId').val() + '/players/' + auth.uid + '/progress').val() >= 100 && root.child('rooms/' + newData.parent().child('recentRoomId').val() + '/settings/gridSize').val() >= 4) )" 
+        },
+        "raceCount": { 
+          ".validate": "newData.isNumber() && ( (!data.exists() && newData.val() == 0) || newData.val() == data.val() || newData.val() == data.val() + 1 )" 
+        }
+      }
+    },
+    "guests": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['displayName', 'isAnonymous']) && newData.child('isAnonymous').val() == true"
+      }
     },
     "rooms": {
+      ".read": "auth != null",
+      ".indexOn": [
+        "visibility",
+        "status"
+      ],
+      "$roomId": {
         ".read": "auth != null",
-        ".write": "auth != null"
+        ".write": "auth != null",
+        "winner": {
+           ".validate": "!data.exists() && newData.val() == auth.uid && newData.parent().child('players/' + auth.uid + '/progress').val() >= 100 && newData.parent().child('settings/gridSize').val() >= 4"
+        },
+        "players": {
+          "$uid": {
+            ".write": "auth != null && (auth.uid == $uid || data.parent().parent().child('host').val() == auth.uid)"
+          }
+        },
+        "settings": {
+          ".write": "auth != null && data.parent().child('host').val() == auth.uid"
+        }
+      }
+    },
+    "invites": {
+      ".read": true,
+      ".write": "auth != null"
     }
   }
 }
